@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {Game,STAGES} from './game-core.mjs?v=pilot-cinematic-1';
+import {Game,STAGES} from './game-core.mjs?v=full-screen-1';
 import {AudioDirector} from './audio.mjs?v=mobile-audio-1';
 const $=id=>document.getElementById(id),canvas=$('game'),game=new Game();
 const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -93,7 +93,10 @@ canvas.addEventListener('pointerdown',e=>{pointer=e.pointerId;canvas.setPointerC
 const target=new T.WebGLRenderTarget(1,1),postScene=new T.Scene(),postCamera=new T.OrthographicCamera(-1,1,1,-1,0,1);
 const postMat=new T.ShaderMaterial({uniforms:{map:{value:target.texture},pixel:{value:new T.Vector2(1/1000,1/700)},warp:{value:0}},vertexShader:'varying vec2 uvv;void main(){uvv=uv;gl_Position=vec4(position.xy,0.,1.);}',fragmentShader:`uniform sampler2D map;uniform vec2 pixel;uniform float warp;varying vec2 uvv;void main(){vec2 u=uvv;vec3 c=texture2D(map,u).rgb;vec3 glow=vec3(0.);for(int j=0;j<12;j++){float a=float(j)*.523599;vec2 d=vec2(cos(a),sin(a));vec3 s=texture2D(map,u+d*pixel*7.).rgb;glow+=max(s-vec3(.68),0.);s=texture2D(map,u+d*pixel*19.).rgb;glow+=max(s-vec3(.8),0.)*.65;}c+=glow*.14;float v=1.-.22*pow(length((u-.5)*1.3),2.);c*=v;c+=vec3(.015,.07,.1)*warp*pow(length(u-.5),1.5);gl_FragColor=vec4(c,1.);}`});postScene.add(new T.Mesh(new T.PlaneGeometry(2,2),postMat));
 let cameraZ=20;
-function resize(){const r=canvas.getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;cameraZ=Math.max(20,6+8.5/(Math.tan(T.MathUtils.degToRad(57/2))*camera.aspect));camera.updateProjectionMatrix();const size=new T.Vector2();renderer.getDrawingBufferSize(size);target.setSize(size.x,size.y);postMat.uniforms.pixel.value.set(1/size.x,1/size.y);camera.position.set(0,4,cameraZ);camera.lookAt(0,-.8,-25);}
+// Let the rocket roam the whole visible screen: project the screen corners onto the ship's plane (z=6) at the combat FOV, then inset by the ship's own size.
+const shipBox=new T.Box3().setFromObject(ship),shipHalf=shipBox.getSize(new T.Vector3()).multiplyScalar(.5),shipOffset=shipBox.getCenter(new T.Vector3()).sub(ship.position);
+function fitBounds(){const fov=camera.fov;camera.fov=57;camera.updateProjectionMatrix();camera.updateMatrixWorld();const corners=[[-1,-1],[1,-1],[-1,1],[1,1]].map(([x,y])=>{ray.setFromCamera(new T.Vector2(x,y),camera);return ray.ray.intersectPlane(plane,new T.Vector3());});camera.fov=fov;camera.updateProjectionMatrix();if(corners.some(c=>!c))return;const half=Math.min(...corners.map(c=>Math.abs(c.x))),bottom=Math.max(corners[0].y,corners[1].y),top=Math.min(corners[2].y,corners[3].y);game.setBounds({minX:-half+shipHalf.x-shipOffset.x,maxX:half-shipHalf.x-shipOffset.x,minY:bottom+shipHalf.y-shipOffset.y,maxY:top-shipHalf.y-shipOffset.y});}
+function resize(){const r=canvas.getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;cameraZ=Math.max(20,6+8.5/(Math.tan(T.MathUtils.degToRad(57/2))*camera.aspect));camera.updateProjectionMatrix();const size=new T.Vector2();renderer.getDrawingBufferSize(size);target.setSize(size.x,size.y);postMat.uniforms.pixel.value.set(1/size.x,1/size.y);camera.position.set(0,4,cameraZ);camera.lookAt(0,-.8,-25);fitBounds();}
 addEventListener('resize',resize);resize();
 function frame(now){requestAnimationFrame(frame);const dt=Math.min(.04,(now-last)/1000);last=now;audio.tick(game.phase,game.paused);if(game.paused)return;visualTime+=dt;
  const dx=Number(keys.has('arrowright')||keys.has('d'))-Number(keys.has('arrowleft')||keys.has('a')),dy=Number(keys.has('arrowup')||keys.has('w'))-Number(keys.has('arrowdown')||keys.has('s'));const prevX=game.player.x,prevY=game.player.y;

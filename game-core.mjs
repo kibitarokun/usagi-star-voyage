@@ -11,6 +11,7 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const combat=p=>['swarm','miniboss','final'].includes(p);
 export function segmentHit(a,b,p,r){const dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z;const d=dx*dx+dy*dy+dz*dz;const t=d?clamp(((p.x-a.x)*dx+(p.y-a.y)*dy+(p.z-a.z)*dz)/d,0,1):0;return Math.hypot(a.x+dx*t-p.x,a.y+dy*t-p.y,a.z+dz*t-p.z)<=r;}
 export class Game {
+  bounds={minX:-5.8,maxX:5.8,minY:-3.5,maxY:3.7};
   constructor(random=Math.random){this.random=random;this.reset(false);}
   reset(start=true){this.phase=start?'warp':'ready';this.stage=0;this.stageKills=0;this.time=0;this.total=0;this.score=0;this.kills=0;this.shotsFired=0;this.lives=5;this.player={x:0,y:-1.8,z:6,inv:0};this.enemies=[];this.shots=[];this.bullets=[];this.beams=[];this.events=[];this.serial=0;this.spawn=0;this.fire=0;this.firing=false;this.boss=null;this.paused=false;}
   id(){return ++this.serial;}
@@ -30,7 +31,8 @@ export class Game {
   }
   setFiring(value){this.firing=!!value;}
   takeEvents(){return this.events.splice(0);}
-  move(x,y){if(this.paused||!combat(this.phase))return;this.player.x=clamp(x,-5.8,5.8);this.player.y=clamp(y,-3.5,3.7);}
+  setBounds(b){this.bounds={...this.bounds,...b};}
+  move(x,y){if(this.paused||!combat(this.phase))return;const b=this.bounds;this.player.x=clamp(x,b.minX,b.maxX);this.player.y=clamp(y,b.minY,b.maxY);}
   damage(source='impact'){if(!combat(this.phase)||this.paused||this.player.inv>0)return false;this.lives--;this.player.inv=1.4;this.events.push({type:'damage',source,...this.player});if(this.lives===0)this.enter('over');return true;}
   hit(target,power){
     if(!combat(this.phase)||this.paused||target.hp<=0)return false;
