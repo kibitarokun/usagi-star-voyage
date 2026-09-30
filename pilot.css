@@ -192,7 +192,7 @@
   .bottom { left: calc(env(safe-area-inset-left) + 18px); right: calc(env(safe-area-inset-right) + 18px); bottom: calc(env(safe-area-inset-bottom) + 12px); }
   .bottom .tools { display: flex; width: auto; max-width: none; }
   .volume-control { min-height: 38px; }
-  .dialogue { left: calc(env(safe-area-inset-left) + 14px); top: calc(env(safe-area-inset-top) + 96px); bottom: auto; width: min(260px, 48%); height: 74px; padding: 3px 7px 3px 3px; }
+  .dialogue { left: calc(env(safe-area-inset-left) + 14px); top: auto; bottom: calc(env(safe-area-inset-bottom) + 63px); width: min(260px, 48%); height: 74px; padding: 3px 7px 3px 3px; }
   .dialogue-copy { padding-left: 8px; }
   .dialogue-copy p { margin-top: 3px; font-size: 11px; line-height: 1.25; }
   .dialogue-speaker { font-size: 9px; }
