@@ -136,6 +136,8 @@
 .volume-control input { width: 76px; height: 22px; margin: 0; accent-color: #75e9f5; cursor: pointer; }
 .volume-control input:disabled { opacity: .4; cursor: default; }
 .volume-control input:focus-visible { outline: 2px solid #a2f5ff; outline-offset: 3px; }
+.bottom .tools { margin-left: auto; }
+.bottom { justify-content: flex-end; }
 @media (max-width: 600px) {
   .shell { width: 100dvw; height: 100dvh; max-height: none; }
   .frame::before,.frame::after { height: 12px; }
