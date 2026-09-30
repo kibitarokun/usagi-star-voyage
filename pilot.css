@@ -182,12 +182,14 @@
   .hud { inset: calc(env(safe-area-inset-top) + 17px) 20px auto; }
   .stage { top: calc(env(safe-area-inset-top) + 20px); width: 42%; }
   .stage strong { font-size: 11px; }
-  .boss { top: calc(env(safe-area-inset-top) + 100px); left: 32%; width: 36%; }
+  .boss { top: calc(env(safe-area-inset-top) + 100px); left: 54%; width: 42%; }
   .bottom { left: calc(env(safe-area-inset-left) + 18px); right: calc(env(safe-area-inset-right) + 18px); bottom: calc(env(safe-area-inset-bottom) + 12px); }
   .bottom .tools { display: flex; width: auto; max-width: none; }
   .volume-control { min-height: 38px; }
-  .dialogue { left: 18px; bottom: calc(env(safe-area-inset-bottom) + 63px); width: min(52%, 440px); height: 86px; }
-  .dialogue-copy p { font-size: 12px; }
+  .dialogue { left: calc(env(safe-area-inset-left) + 14px); top: calc(env(safe-area-inset-top) + 96px); bottom: auto; width: min(260px, 48%); height: 74px; padding: 3px 7px 3px 3px; }
+  .dialogue-copy { padding-left: 8px; }
+  .dialogue-copy p { margin-top: 3px; font-size: 11px; line-height: 1.25; }
+  .dialogue-speaker { font-size: 9px; }
   .panel .card { width: min(580px, 80%); }
   .panel .card h1 { font-size: clamp(28px, 7vh, 48px); }
   .panel .card p { font-size: 12px; margin-bottom: 10px; }
