@@ -4,8 +4,12 @@ export const STAGES = [
   {kind:'swarm',goal:9,spawn:.74,enemySpeed:18,bulletSpeed:15,enemyHp:2,rockChance:.13,beamChance:.22},
   {kind:'miniboss',hp:55,volleyCount:4,volleySpeed:19,volleyDelay:1.85,beamDelay:5.6},
   {kind:'swarm',goal:12,spawn:.53,enemySpeed:23,bulletSpeed:19,enemyHp:3,rockChance:.16,beamChance:.34},
-  {kind:'final',hp:125,volleyCount:7,volleySpeed:23,volleyDelay:1.15,beamDelay:4.1}
+  {kind:'final',hp:125,volleyCount:7,volleySpeed:23,volleyDelay:1.15,beamDelay:4.1},
+  {kind:'swarm',name:'紫電の星雲',theme:'nebula',goal:18,spawn:.46,enemySpeed:25,bulletSpeed:21,enemyHp:3,rockChance:.12,beamChance:.3,movements:['weaver','orbiter'],formation:2},
+  {kind:'swarm',name:'灼熱の小惑星帯',theme:'ember',goal:24,spawn:.39,enemySpeed:27,bulletSpeed:23,enemyHp:4,rockChance:.22,beamChance:.38,movements:['diver','weaver','orbiter'],formation:3},
+  {kind:'final',name:'超旗艦「エクリプス」',theme:'eclipse',hp:240,volleyCount:9,volleySpeed:25,volleyDelay:1.1,beamDelay:3.8,elite:true}
 ];
+export const STAGE_COUNT=STAGES.length-1;
 export const PHASES = {ready:'出撃準備',warp:'ワープ航行',swarm:'敵編隊',miniboss:'中ボス',stageclear:'ステージクリア',transit:'次の戦域へ',final:'ラスボス',victory:'撃破',clear:'ゲームクリア',over:'ゲームオーバー'};
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const combat=p=>['swarm','miniboss','final'].includes(p);
@@ -13,9 +17,15 @@ export function segmentHit(a,b,p,r){const dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z;const
 export class Game {
   bounds={minX:-5.8,maxX:5.8,minY:-3.5,maxY:3.7};
   constructor(random=Math.random){this.random=random;this.reset(false);}
-  reset(start=true){this.phase=start?'warp':'ready';this.stage=0;this.stageKills=0;this.time=0;this.total=0;this.score=0;this.kills=0;this.shotsFired=0;this.lives=5;this.player={x:0,y:-1.8,z:6,inv:0};this.enemies=[];this.shots=[];this.bullets=[];this.beams=[];this.events=[];this.serial=0;this.spawn=0;this.fire=0;this.firing=false;this.boss=null;this.paused=false;}
+  reset(start=true){this.checkpoint=null;this.phase=start?'warp':'ready';this.stage=0;this.stageKills=0;this.time=0;this.total=0;this.score=0;this.kills=0;this.shotsFired=0;this.lives=5;this.player={x:0,y:-1.8,z:6,inv:0};this.enemies=[];this.shots=[];this.bullets=[];this.beams=[];this.events=[];this.serial=0;this.spawn=0;this.fire=0;this.firing=false;this.boss=null;this.paused=false;}
   id(){return ++this.serial;}
-  beginStage(stage){this.stage=stage;this.stageKills=0;this.enter(STAGES[stage].kind);}
+  beginStage(stage){this.stage=stage;this.stageKills=0;this.checkpoint={stage,score:this.score,kills:this.kills,shotsFired:this.shotsFired,total:this.total};this.enter(STAGES[stage].kind);}
+  retryStage(){
+    if(this.phase!=='over'||!this.checkpoint)return false;
+    const checkpoint={...this.checkpoint};this.reset();
+    this.score=checkpoint.score;this.kills=checkpoint.kills;this.shotsFired=checkpoint.shotsFired;this.total=checkpoint.total;
+    this.beginStage(checkpoint.stage);this.player.inv=1.4;return true;
+  }
   enter(phase){
     if(phase==='swarm'&&!this.stage)this.stage=1;
     if(phase==='miniboss'&&!this.stage)this.stage=3;
@@ -39,12 +49,26 @@ export class Game {
     target.hp=Math.max(0,target.hp-power);this.events.push({type:'hit',x:target.x,y:target.y,z:target.z});
     if(target.hp>0)return true;
     this.events.push({type:'explode',x:target.x,y:target.y,z:target.z,big:target.type!=='drone'&&target.type!=='rock'});
-    if(target===this.boss){this.score+=this.phase==='final'?5000:1500;this.enter(this.phase==='final'?'victory':'stageclear');}
+    if(target===this.boss){this.score+=this.phase==='final'?5000:1500;this.enter(this.stage===STAGE_COUNT?'victory':'stageclear');}
     else{this.score+=target.type==='rock'?50:150;if(target.type==='drone'){this.kills++;this.stageKills++;if(this.stageKills>=STAGES[this.stage].goal)this.enter('stageclear');}}
     return true;
   }
-  spawnEnemy(){const cfg=STAGES[this.stage],rock=this.random()<cfg.rockChance;this.enemies.push({id:this.id(),type:rock?'rock':'drone',x:(this.random()-.5)*9.5,y:(this.random()-.5)*5.4,z:-62,hp:rock?2:cfg.enemyHp,r:rock?.85:.8,speed:rock?cfg.enemySpeed+5:cfg.enemySpeed,wobble:this.random()*6,age:0,fired:false});}
-  volley(){const b=this.boss;if(!b)return;const cfg=STAGES[this.stage],count=cfg.volleyCount;const vx=this.player.x-b.x,vy=this.player.y-b.y,vz=this.player.z-b.z,len=Math.hypot(vx,vy,vz);for(let i=0;i<count;i++){const spread=(i-(count-1)/2)*.095;this.bullets.push({id:this.id(),x:b.x,y:b.y,z:b.z+1,vx:(vx/len+spread)*cfg.volleySpeed,vy:(vy/len+(this.phase==='final'?Math.sin(i*2)*.035:0))*cfg.volleySpeed,vz:vz/len*cfg.volleySpeed,r:.24});}this.events.push({type:'volley'});}
+  spawnEnemy(){
+    const cfg=STAGES[this.stage],rock=this.random()<cfg.rockChance,count=rock?1:cfg.formation||1;
+    const movement=cfg.movements?.[Math.floor(this.random()*cfg.movements.length)]||'drone';
+    const center=(this.random()-.5)*7,y=(this.random()-.5)*5.4;
+    for(let i=0;i<count;i++){const x=center+(i-(count-1)/2)*2;this.enemies.push({id:this.id(),type:rock?'rock':'drone',movement:rock?'rock':movement,baseX:x,baseY:y,x,y,z:-62-i*3,hp:rock?2:cfg.enemyHp,r:rock?.85:.8,speed:rock?cfg.enemySpeed+5:cfg.enemySpeed,wobble:this.random()*6,age:0,fired:false});}
+  }
+  moveEnemy(e,dt){
+    e.age+=dt;e.z+=e.speed*dt;
+    if(e.movement==='weaver'){e.x=e.baseX+Math.sin(e.age*3+e.wobble)*2.2;e.y=e.baseY+Math.sin(e.age*1.7)*.6;}
+    else if(e.movement==='orbiter'){e.x=e.baseX+Math.cos(e.age*3+e.wobble)*1.8;e.y=e.baseY+Math.sin(e.age*3+e.wobble)*1.5;}
+    else if(e.movement==='diver'){
+      if(e.z>-36&&!e.dive){e.dive={x:this.player.x,y:this.player.y};}
+      if(e.dive){e.x+=(e.dive.x-e.x)*Math.min(1,dt*2);e.y+=(e.dive.y-e.y)*Math.min(1,dt*2);e.z+=e.speed*.45*dt;}
+    }else e.x+=Math.sin(e.wobble+e.age*2)*dt*.35;
+  }
+  volley(){const b=this.boss;if(!b)return;const cfg=STAGES[this.stage],enraged=cfg.elite&&b.hp<=b.max*.5,count=cfg.volleyCount+(enraged?4:0);b.volleyIndex=(b.volleyIndex||0)+1;const vx=this.player.x-b.x,vy=this.player.y-b.y,vz=this.player.z-b.z,len=Math.hypot(vx,vy,vz);for(let i=0;i<count;i++){const spread=(i-(count-1)/2)*.095;this.bullets.push({id:this.id(),x:b.x,y:b.y,z:b.z+1,vx:(vx/len+spread)*cfg.volleySpeed,vy:(vy/len+(cfg.elite?Math.sin(i*1.7+b.volleyIndex)*.18:this.phase==='final'?Math.sin(i*2)*.035:0))*cfg.volleySpeed,vz:vz/len*cfg.volleySpeed,r:.24});}this.events.push({type:'volley'});}
   chargeBeam(source,origin){const from={x:origin.x,y:origin.y,z:origin.z},to={x:this.player.x,y:this.player.y+.48,z:this.player.z+3};this.beams.push({id:this.id(),type:'beam',from,to,charge:source==='boss'?.95:.8,life:source==='boss'?.85:.62,r:source==='boss'?.5:.34,state:'charge',source,hit:false});this.events.push({type:'beamCharge',...from});}
   step(dt){
     if(this.paused||['ready','clear','over'].includes(this.phase))return;
@@ -56,9 +80,9 @@ export class Game {
     this.player.inv=Math.max(0,this.player.inv-dt);const phase=this.phase;
     if(phase==='swarm'){
       const cfg=STAGES[this.stage];this.spawn-=dt;if(this.spawn<=0){this.spawnEnemy();this.spawn=cfg.spawn;}
-      for(const e of this.enemies){e.age+=dt;e.z+=e.speed*dt;e.x+=Math.sin(e.wobble+e.age*2)*dt*.35;if(e.type==='drone'&&!e.fired&&e.z>-25){e.fired=true;if(this.random()<cfg.beamChance)this.chargeBeam('drone',e);else{const v={x:this.player.x-e.x,y:this.player.y-e.y,z:this.player.z-e.z},l=Math.hypot(v.x,v.y,v.z);this.bullets.push({id:this.id(),x:e.x,y:e.y,z:e.z,vx:v.x/l*cfg.bulletSpeed,vy:v.y/l*cfg.bulletSpeed,vz:v.z/l*cfg.bulletSpeed,r:.2});}}}
+      for(const e of this.enemies){this.moveEnemy(e,dt);if(e.type==='drone'&&!e.fired&&e.z>-25){e.fired=true;if(this.random()<cfg.beamChance)this.chargeBeam('drone',e);else{const v={x:this.player.x-e.x,y:this.player.y-e.y,z:this.player.z-e.z},l=Math.hypot(v.x,v.y,v.z);this.bullets.push({id:this.id(),x:e.x,y:e.y,z:e.z,vx:v.x/l*cfg.bulletSpeed,vy:v.y/l*cfg.bulletSpeed,vz:v.z/l*cfg.bulletSpeed,r:.2});}}}
     }
-    if(this.boss){const b=this.boss,cfg=STAGES[this.stage];b.z+=(-27-b.z)*Math.min(1,dt*1.6);b.x=Math.sin(this.time*.65)*2.7;b.y=.3+Math.sin(this.time*.9)*1.4;b.cooldown-=dt;if(b.cooldown<0){this.volley();b.cooldown=cfg.volleyDelay;}b.beamCooldown-=dt;if(b.beamCooldown<0){this.chargeBeam('boss',{x:b.x,y:b.y,z:b.z+2});b.beamCooldown=cfg.beamDelay;}}
+    if(this.boss){const b=this.boss,cfg=STAGES[this.stage];b.z+=(-27-b.z)*Math.min(1,dt*1.6);const enraged=cfg.elite&&b.hp<=b.max*.5;if(enraged&&!b.enraged){b.enraged=true;this.events.push({type:'enrage'});}b.x=Math.sin(this.time*(cfg.elite?1:.65))*(cfg.elite?4.2:2.7);b.y=.3+Math.sin(this.time*(cfg.elite?1.4:.9))*1.4;b.cooldown-=dt;if(b.cooldown<0){this.volley();b.cooldown=cfg.volleyDelay*(enraged?.7:1);}b.beamCooldown-=dt;if(b.beamCooldown<0){this.chargeBeam('boss',{x:b.x,y:b.y,z:b.z+2});if(cfg.elite){for(const side of[-1,1]){this.chargeBeam('boss',{x:b.x+side*4,y:b.y,z:b.z+2});this.beams.at(-1).to.x+=side*3.8;}}b.beamCooldown=cfg.beamDelay*(enraged?.8:1);}}
     for(const beam of this.beams){if(beam.state==='charge'){beam.charge-=dt;if(beam.charge<=0){beam.state='fire';this.events.push({type:'beamFire',x:beam.to.x,y:beam.to.y,z:beam.to.z});}}else{beam.life-=dt;if(!beam.hit&&segmentHit(beam.from,beam.to,{x:this.player.x,y:this.player.y+.48,z:this.player.z},beam.r+.88)){beam.hit=this.damage('beam');if(this.phase!==phase)return;}}}
     this.fire=Math.max(0,this.fire-dt);
     if(this.fire===0&&this.firing){
