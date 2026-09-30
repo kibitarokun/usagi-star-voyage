@@ -8,6 +8,15 @@ export class AudioDirector {
     this.step = 0;
     this.nextNote = 0;
     this.phase = 'ready';
+    this.samples = {
+      shot: 'assets/sounds/usagi-shot.mp3',
+      damage: 'assets/sounds/damage.mp3',
+      beam: 'assets/sounds/enemy-beam-shot.mp3',
+      stageClear: 'assets/sounds/stage-clear.mp3',
+      gameClear: 'assets/sounds/game-clear.mp3',
+      gameOver: 'assets/sounds/game-over.mp3',
+    };
+    this.samplePlayers = new Map();
   }
 
   async enable() {
@@ -59,7 +68,24 @@ export class AudioDirector {
     oscillator.stop(start + duration + 0.01);
   }
 
+  sample(kind) {
+    if (!this.enabled || !this.samples[kind] || typeof globalThis.Audio !== 'function') return false;
+    let player = this.samplePlayers.get(kind);
+    if (!player) {
+      player = new Audio(this.samples[kind]);
+      player.preload = 'auto';
+      player.volume = Math.min(1, this.volume * 0.75);
+      this.samplePlayers.set(kind, player);
+    }
+    player.currentTime = 0;
+    player.volume = Math.min(1, this.volume * 0.75);
+    player.play().catch(() => {});
+    return true;
+  }
+
   effect(kind) {
+    const sampleKind = {shot: 'shot', damage: 'damage', beam: 'beam'}[kind];
+    if (sampleKind && this.sample(sampleKind)) return;
     const effects = {
       shot: [870, 0.085, 'triangle', 0.018, 190],
       hit: [660, 0.16, 'sine', 0.032, 980],
@@ -75,7 +101,9 @@ export class AudioDirector {
     this.note(frequency, duration, type, level, undefined, ending);
   }
 
-  fanfare(success) {
+  fanfare(success, final = false) {
+    const sampleKind = final ? 'gameClear' : success ? 'stageClear' : 'gameOver';
+    if (this.sample(sampleKind)) return;
     if (!this.enabled || !this.context) return;
     const now = this.context.currentTime;
     const notes = success ? [392, 523.25, 659.25, 783.99, 1046.5] : [392, 329.63, 261.63, 196];
