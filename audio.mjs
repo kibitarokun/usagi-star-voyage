@@ -1,4 +1,9 @@
 // Small, self-contained soundtrack: no downloads and no autoplay before a gesture.
+export function combatSound(event) {
+  if(event.type==='explode')return event.boss?'bossBlast':event.targetType==='drone'?'enemyDown':'blast';
+  if(event.type==='hit'&&event.boss&&!event.lethal)return 'bossHit';
+  return null;
+}
 export class AudioDirector {
   constructor() {
     this.context = null;
@@ -12,6 +17,9 @@ export class AudioDirector {
       shot: 'assets/sounds/usagi-shot.mp3',
       damage: 'assets/sounds/damage.mp3',
       beam: 'assets/sounds/enemy-beam-shot.mp3',
+      enemyDown: 'assets/sounds/enemy-down.mp3',
+      bossHit: 'assets/sounds/enemy-down.mp3',
+      bossBlast: 'assets/sounds/boss-down.mp3',
       stageClear: 'assets/sounds/stage-clear.mp3',
       gameClear: 'assets/sounds/game-clear.mp3',
       gameOver: 'assets/sounds/game-over.mp3',
@@ -84,7 +92,7 @@ export class AudioDirector {
   }
 
   effect(kind) {
-    const sampleKind = {shot: 'shot', damage: 'damage', beam: 'beam'}[kind];
+    const sampleKind = {shot: 'shot', damage: 'damage', beam: 'beam',enemyDown:'enemyDown',bossHit:'bossHit',bossBlast:'bossBlast'}[kind];
     if (sampleKind && this.sample(sampleKind)) return;
     const effects = {
       shot: [870, 0.085, 'triangle', 0.018, 190],

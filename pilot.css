@@ -63,6 +63,15 @@
 .panel .card p { max-width: 42ch; color: #e0f1fb; font-size: clamp(15px, 1.55vw, 19px); line-height: 1.7; text-shadow: 0 2px 15px #00101d; }
 .panel .card .controls-copy { max-width: 42ch; margin: -8px 0 22px; padding: 9px 12px; border-left: 2px solid #83eaff88; background: #09263a88; color: #bfe6f5; font-size: clamp(12px, 1.15vw, 14px); line-height: 1.6; letter-spacing: .03em; }
 .journey span { color: #e1f6ff; border-color: #8eddf06b; background: #0c2b40b8; }
+.stage-select { max-width: 520px; margin: 16px 0 20px; }
+.stage-select .journey { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; margin:0; }
+.stage-select-head { display:flex; align-items:baseline; justify-content:space-between; gap:14px; margin-bottom:8px; color:#8fdff5; font-size:10px; font-weight:800; letter-spacing:.17em; }
+.stage-select-head strong { color:#fff2bc; font-size:11px; letter-spacing:.08em; }
+.journey button { min-width:0; border:1px solid #8eddf06b; border-radius:3px; background:#0c2b40b8; color:#e1f6ff; padding:8px 10px; font:inherit; font-weight:800; letter-spacing:.08em; text-align:left; transition:transform .15s,background .15s,border-color .15s,box-shadow .15s; }
+.journey button span { display:block; margin-top:3px; padding:0; border:0; background:transparent; color:#9ec7da; font-size:10px; font-weight:500; letter-spacing:.03em; }
+.journey button:hover,.journey button:focus-visible { border-color:#b8f4ff; background:#124c68d9; transform:translateY(-1px); }
+.journey button.selected,.journey button[aria-pressed="true"] { border-color:#fff0a6; background:linear-gradient(135deg,#175d78,#1b8ca2); color:#fff; box-shadow:0 0 18px #5df0ff66; }
+.journey button.selected span,.journey button[aria-pressed="true"] span { color:#fff4bb; }
 .primary { background: linear-gradient(135deg, #d1fbff, #7dddef); box-shadow: 0 0 32px #52d8ff55, 0 7px 24px #00101ba6; }
 .primary:hover { filter: brightness(1.07); }
 .stage strong { padding: 5px 11px; border: 1px solid #96ddf244; border-radius: 5px; background: #071a2bbd; color: #f3fbff; font-size: clamp(13px, 1.25vw, 16px); text-shadow: 0 1px 10px #041524; }
@@ -168,8 +177,10 @@
   .panel .card h1 { font-size: clamp(35px, 10vw, 48px); margin-bottom: 12px; }
   .panel .card p { max-width: 32ch; font-size: 13px; line-height: 1.55; margin-bottom: 16px; }
   .panel .card .controls-copy { margin: -5px 0 15px; padding: 7px 9px; font-size: 10px; line-height: 1.5; }
-  .journey { max-width: 290px; gap: 4px; margin: 16px 0 22px; font-size: 10px; }
-  .journey span { padding: 5px 6px; }
+  .stage-select { margin: 13px 0 17px; }
+  .journey { max-width: 310px; gap: 4px; margin: 0; font-size: 10px; }
+  .journey button { padding: 5px 6px; }
+  .journey button span { margin-top: 2px; font-size: 9px; }
   .primary { padding: 13px 24px; min-height: 45px; }
   .title-pilot { width: min(52vw, 225px); right: -3%; top: 11%; opacity: .48; }
   .stage-clear { gap: 10px; }
@@ -200,8 +211,12 @@
   .panel .card h1 { font-size: clamp(28px, 7vh, 48px); }
   .panel .card p { font-size: 12px; margin-bottom: 10px; }
   .panel .card .controls-copy { margin: -3px 0 10px; font-size: 10px; }
-  .journey { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 460px; gap: 4px; margin: 6px 0 8px; font-size: 10px; }
-  .journey span { padding: 4px 6px; white-space: nowrap; }
+  .stage-select { margin: 6px 0 8px; }
+  .stage-select .journey { grid-template-columns:repeat(5,minmax(0,1fr)); }
+  .stage-select-head { margin-bottom: 4px; }
+  .journey { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); max-width: 460px; gap: 4px; margin: 0; font-size: 10px; }
+  .journey button { padding: 4px 6px; white-space: nowrap; }
+  .journey button span { font-size: 8px; }
   .panel { padding-top: 14px; padding-bottom: 14px; overflow-y: auto; }
   .panel .card h1 { margin-bottom: 10px; }
   .panel .kicker { margin-bottom: 8px; }

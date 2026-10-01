@@ -1,12 +1,32 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {AudioDirector} from './audio.mjs';
+import {AudioDirector,combatSound} from './audio.mjs';
+import {Game} from './game-core.mjs';
+import {statSync} from 'node:fs';
 
 class FakeParam {
   setValueAtTime() {}
   exponentialRampToValueAtTime() {}
   setTargetAtTime() {}
 }
+
+test('enemy defeat and boss damage/defeat events play the supplied recordings',()=>{
+  const previous=globalThis.Audio,played=[];
+  globalThis.Audio=class {constructor(url){this.url=url;}play(){played.push(this.url);return Promise.resolve();}};
+  try{
+    const audio=new AudioDirector();audio.enabled=true;
+    const playEvents=g=>{for(const event of g.takeEvents()){const sound=combatSound(event);if(sound)audio.effect(sound);}};
+    const g=new Game();g.beginStage(1);g.hit({type:'drone',hp:1,x:0,y:0,z:-20},1);playEvents(g);
+    assert.deepEqual(played,['assets/sounds/enemy-down.mp3']);
+    for(const stage of [3,5,8,9]){
+      played.length=0;g.beginStage(stage);if(stage===9)g.enter('final');
+      g.hit(g.boss,1);playEvents(g);assert.deepEqual(played,['assets/sounds/enemy-down.mp3']);
+      played.length=0;g.hit(g.boss,999);playEvents(g);assert.deepEqual(played,['assets/sounds/boss-down.mp3']);
+    }
+    for(const url of ['assets/sounds/enemy-down.mp3','assets/sounds/boss-down.mp3'])assert.ok(statSync(new URL(url,import.meta.url)).size>0);
+    played.length=0;audio.enabled=false;audio.effect('enemyDown');audio.effect('bossBlast');assert.equal(played.length,0);
+  }finally{globalThis.Audio=previous;}
+});
 class FakeNode {
   constructor() { this.gain = new FakeParam(); this.frequency = new FakeParam(); this.started = false; }
   connect(node) { return node; }
